@@ -13,10 +13,17 @@ if (!isset($_POST['node_id']) || !isset($_POST['token'])  || !isset($_POST['hear
   die("Invalid node_id or token");
 }
 
-# Sanitise node_id, token and heartbeat payload
+# Sanitise node_id, token and hostname
 $_POST['node_id'] = $db->real_escape_string($_POST['node_id']);
 $_POST['token'] = $db->real_escape_string($_POST['token']);
+$_POST['hostname'] = $db->real_escape_string($_POST['hostname']);
 
+# If status is set then sanitise it, otherwise set it to empty string
+if (isset($_POST['status'])) {
+  $_POST['status'] = $db->real_escape_string($_POST['status']);
+} else {
+  $_POST['status'] = "";
+}
 # Authenticate node_id against token from POST
 if (!auth_node($_POST['node_id'], $_POST['token'], $db)) {
   http_response_code(401);
@@ -51,14 +58,18 @@ if (!array_key_exists('memory_used', $sensors)) { $sensors['memory_used'] = 0; }
 if (!array_key_exists('storage_used', $sensors)) { $sensors['storage_used'] = 0; }
 
 # Insert payload into database
-$sql  = "INSERT INTO `heartbeats` (`node_id`, `timestamp`, `cpu_temp`, `gpu_temp`, `memory_used`, `storage_used`) ";
+$sql  = "INSERT INTO `heartbeats` (`node_id`, `hostname`, `status`, `timestamp`, `cpu_temp`, `gpu_temp`, `memory_used`, `storage_used`) ";
 $sql .= "VALUES ('{$_POST['node_id']}', ";
+$sql .= "'{$_POST['hostname']}', ";
+$sql .= "'".$_POST['status']."', ";
 $sql .= "'".$timestamp."', ";
 $sql .= "'".$sensors['onboard_cpu']."', ";
 $sql .= "'".$sensors['onboard_gpu']."', ";
 $sql .= "'".$sensors['memory_used']."', ";
 $sql .= "'".$sensors['storage_used']."') ";
 $sql .= " ON DUPLICATE KEY UPDATE ";
+$sql .= "`hostname` = '".$_POST['hostname']."', ";
+$sql .= "`status` = '".$_POST['status']."', ";
 $sql .= "`timestamp` = '".$timestamp."', ";
 $sql .= "`cpu_temp` = '".$sensors['onboard_cpu']."', ";
 $sql .= "`gpu_temp` = '".$sensors['onboard_gpu']."', ";
