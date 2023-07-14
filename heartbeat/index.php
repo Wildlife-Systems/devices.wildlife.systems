@@ -25,18 +25,32 @@ if (!auth_node($_POST['node_id'], $_POST['token'], $db)) {
 
 # Check string is JSON formatted
 $heartbeat = json_decode(urldecode($_POST['heartbeat'], ));
-if (!is_object($heartbeat) && !is_array($heartbeat)) {
+if (!is_object($heartbeat[0]) && !is_array($heartbeat)) {
   http_response_code(422);
-  die("Heartbeat payload not valid JSON");
+  die("Heartbeat payload not in expected format");
 }
 
-# Submit payload to database
+# Prepare payload for database
 $sensors = array();
-$timestamp = $heartbeat[0]->timestamp;
+$timestamp = time();
 foreach ($heartbeat as $sensor) {
+  if (!isset($sensor->value)) {
+    http_response_code(422);
+    die("Heartbeat payload not in expected format");
+  }
   $sensors[$sensor->sensor] = $db->real_escape_string($sensor->value);
+  if (isset($sensor->timestamp)) {
+    if ($sensor->$timestamp < $timestamp) {
+      $timestamp = $sensor->timestamp;
+    }
+  }
 }
+if (!array_key_exists('onboard_cpu', $sensors)) { $sensors['onboard_cpu'] = 0; }
+if (!array_key_exists('onboard_gpu', $sensors)) { $sensors['onboard_gpu'] = 0; } 
+if (!array_key_exists('memory_used', $sensors)) { $sensors['memory_used'] = 0; }
+if (!array_key_exists('storage_used', $sensors)) { $sensors['storage_used'] = 0; }
 
+# Insert payload into database
 $sql  = "INSERT INTO `heartbeats` (`node_id`, `timestamp`, `cpu_temp`, `gpu_temp`, `memory_used`, `storage_used`) ";
 $sql .= "VALUES ('{$_POST['node_id']}', ";
 $sql .= "'".$timestamp."', ";
