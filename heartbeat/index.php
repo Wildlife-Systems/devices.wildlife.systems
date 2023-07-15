@@ -2,11 +2,6 @@
 include ("../config/db.php");
 include("../inc/auth.php");
 
-# Convert GET to POST
-if ($_SERVER['REQUEST_METHOD'] == 'GET') {
-  $_POST = $_GET;
-}
-
 # Check node_id, token and payload are set in POST
 if (!isset($_POST['node_id']) || !isset($_POST['token'])  || !isset($_POST['heartbeat'])) {
   http_response_code(400);
