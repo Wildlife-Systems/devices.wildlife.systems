@@ -1,5 +1,5 @@
 <?php
-include ("../inc/db.php");
+include ("../config/db.php");
 include("../inc/auth.php");
 
 # Convert GET to POST
@@ -24,6 +24,7 @@ if (isset($_POST['status'])) {
 } else {
   $_POST['status'] = "";
 }
+
 # Authenticate node_id against token from POST
 if (!auth_node($_POST['node_id'], $_POST['token'], $db)) {
   http_response_code(401);
